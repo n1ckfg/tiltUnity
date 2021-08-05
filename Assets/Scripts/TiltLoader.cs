@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.IO;
 using System;
 using UnityEngine;
-using ICSharpCode.SharpZipLibUnityPort.Core;
 using ICSharpCode.SharpZipLibUnityPort.Zip;
 using SimpleJSON;
 
 public class TiltLoader : MonoBehaviour {
 
+    public TiltStroke prefab;
     public string readFileName;
     public int numStrokes;
     public List<TiltStroke> strokes;
-	public JSONNode json;
 
+	[HideInInspector] public JSONNode json;
 	[HideInInspector] public byte[] bytes;
 
     private ZipFile zipFile;
@@ -38,16 +38,33 @@ public class TiltLoader : MonoBehaviour {
         parseTilt();
     }
 
-    private void getEntriesFromZip(byte[] bytes) {
+    private byte[] readEntryAsBytes(ZipEntry _entry) {
+        Stream zippedStream = zipFile.GetInputStream(_entry);
+        MemoryStream ms = new MemoryStream();
+        zippedStream.CopyTo(ms);
+        return ms.ToArray();
+    }
+
+    private string readEntryAsString(ZipEntry _entry) {
+        Stream zippedStream = zipFile.GetInputStream(_entry);
+        StreamReader read = new StreamReader(zippedStream, true);
+        return read.ReadToEnd();
+    }
+
+    private JSONNode readEntryAsJson(ZipEntry _entry) {
+        return JSON.Parse(readEntryAsString(_entry));
+    }
+
+    private void getEntriesFromZip(byte[] _bytes) {
         // https://gist.github.com/r2d2rigo/2bd3a1cafcee8995374f
 
-        MemoryStream fileStream = new MemoryStream(bytes, 0, bytes.Length);
+        MemoryStream fileStream = new MemoryStream(_bytes, 0, _bytes.Length);
         zipFile = new ZipFile(fileStream);
 
         foreach (ZipEntry entry in zipFile) {
 			switch(entry.Name.ToLower()) {
                 case "metadata.json":
-                    json = JSON.Parse(readEntryAsString(entry));
+                    json = readEntryAsJson(entry);
                     break;
                 case "data.sketch":
                     bytes = readEntryAsBytes(entry);
@@ -59,23 +76,22 @@ public class TiltLoader : MonoBehaviour {
 	private void parseTilt() {
         strokes = new List<TiltStroke>();
 
-        numStrokes = getInt(bytes, 33);
+        numStrokes = BitConverter.ToInt32(bytes, 16);
 
-        /*
 		int offset = 20;
 
         for (int i = 0; i < numStrokes; i++) {
-            int brushIndex = getInt(bytes, offset);
+            int brushIndex = BitConverter.ToInt32(bytes, offset);
 
-            float r = getFloat(bytes, offset + 4) * 255;
-            float g = getFloat(bytes, offset + 8) * 255;
-            float b = getFloat(bytes, offset + 12) * 255;
-            float a = getFloat(bytes, offset + 16) * 255;
+            float r = BitConverter.ToSingle(bytes, offset + 4);
+            float g = BitConverter.ToSingle(bytes, offset + 8);
+            float b = BitConverter.ToSingle(bytes, offset + 12);
+            float a = BitConverter.ToSingle(bytes, offset + 16);
             Color brushColor = new Color(r, g, b, a);
 
-            float brushSize = getFloat(bytes, offset + 20);
-            UInt32 strokeMask = getUInt(bytes, offset + 24);
-            UInt32 controlPointMask = getUInt(bytes, offset + 28);
+            float brushSize = BitConverter.ToSingle(bytes, offset + 20);
+            UInt32 strokeMask = BitConverter.ToUInt32(bytes, offset + 24);
+            UInt32 controlPointMask = BitConverter.ToUInt32(bytes, offset + 28);
 
             int offsetStrokeMask = 0;
             int offsetControlPointMask = 0;
@@ -86,12 +102,9 @@ public class TiltLoader : MonoBehaviour {
                 if ((controlPointMask & bb) > 0) offsetControlPointMask += 4;
             }
 
-            //parent.println("1. " + brushIndex + ", [" + brushColorArray[0] + ", " + brushColorArray[1] + ", " + brushColorArray[2] + ", " + brushColorArray[3] + "]," + brushSize);
-            //parent.println("2. " + offsetStrokeMask + "," + offsetControlPointMask + "," + strokeMask + "," + controlPointMask);
-
             offset += 28 + offsetStrokeMask + 4;
 
-            int numControlPoints = getInt(bytes, offset);
+            int numControlPoints = BitConverter.ToInt32(bytes, offset);
 
 			//parent.println("3. " + numControlPoints);
 
@@ -100,71 +113,26 @@ public class TiltLoader : MonoBehaviour {
             offset += 4;
 
             for (int j = 0; j < numControlPoints; j++) {
-                float x = getFloat(bytes, offset + 0);
-                float y = getFloat(bytes, offset + 4);
-                float z = getFloat(bytes, offset + 8);
+                float x = BitConverter.ToSingle(bytes, offset + 0);
+                float y = BitConverter.ToSingle(bytes, offset + 4);
+                float z = BitConverter.ToSingle(bytes, offset + 8);
                 positions.Add(new Vector3(x, y, z));
 
-                //float qw = getFloat(bytes, offset + 12);
-                //float qx = getFloat(bytes, offset + 16);
-                //float qy = getFloat(bytes, offset + 20);
-                //float qz = getFloat(bytes, offset + 24);
+                //float qw = BitConverter.ToSingle(bytes, offset + 12);
+                //float qx = BitConverter.ToSingle(bytes, offset + 16);
+                //float qy = BitConverter.ToSingle(bytes, offset + 20);
+                //float qz = BitConverter.ToSingle(bytes, offset + 24);
 
                 offset += 28 + offsetControlPointMask;
             }
 
-            //parent.println("4. " + positions.get(0).x + ", " + positions.get(0).y + ", " + positions.get(0).z);
-
-            strokes.Add(new TiltStroke(positions, brushSize, brushColor));
+            TiltStroke stroke = Instantiate(prefab, transform.position, transform.rotation).GetComponent<TiltStroke>();
+            stroke.transform.parent = transform;
+			stroke.init(positions, brushSize, brushColor);
+			strokes.Add(stroke);
         }
-		*/
     }
 
-	private byte[] readEntryAsBytes(ZipEntry entry) {
-        Stream zippedStream = zipFile.GetInputStream(entry);
-        MemoryStream ms = new MemoryStream();
-        zippedStream.CopyTo(ms);
-        return ms.ToArray();
-    }
-
-    private string readEntryAsString(ZipEntry entry) {
-        Stream zippedStream = zipFile.GetInputStream(entry);
-        StreamReader read = new StreamReader(zippedStream, true);
-        return read.ReadToEnd();
-    }
-
-    private int getUInt(byte[] _bytes, int _offset) {
-        byte[] uintBytes = { _bytes[_offset], _bytes[_offset + 1], _bytes[_offset + 2], _bytes[_offset + 3] };
-        return asUInt(uintBytes);
-    }
-
-    private int getInt(byte[] _bytes, int _offset) {
-        byte[] intBytes = { _bytes[_offset], _bytes[_offset + 1], _bytes[_offset + 2], _bytes[_offset + 3] };
-        return asInt(intBytes);
-    }
-
-    private float getFloat(byte[] _bytes, int _offset) {
-        byte[] floatBytes = { _bytes[_offset], _bytes[_offset + 1], _bytes[_offset + 2], _bytes[_offset + 3] };
-        return asFloat(floatBytes);
-    }
-
-    private int asUInt(byte[] _bytes) {
-        int i = asInt(_bytes);
-        long unsigned = i & 0xffffffffL;
-        return (int)unsigned;
-    }
-
-    private int asInt(byte[] _bytes) {
-        return (_bytes[0] & 0xFF)
-               | ((_bytes[1] & 0xFF) << 8)
-               | ((_bytes[2] & 0xFF) << 16)
-               | ((_bytes[3] & 0xFF) << 24);
-    }
-
-    private float asFloat(byte[] _bytes) {
-        return BitConverter.ToSingle(_bytes, 0);
-    }
-	
     private string formPath(string readFileName) {
         string url = "";
 #if UNITY_ANDROID

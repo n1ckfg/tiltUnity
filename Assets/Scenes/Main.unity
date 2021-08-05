@@ -123,6 +123,7 @@ GameObject:
   - component: {fileID: 727734963}
   - component: {fileID: 727734962}
   - component: {fileID: 727734961}
+  - component: {fileID: 727734964}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -160,7 +161,7 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.3
+  near clip plane: 0.01
   far clip plane: 1000
   field of view: 60
   orthographic: 0
@@ -194,6 +195,42 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &727734964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 727734960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c8afae24d09046d6965bdd5a80d4831, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  useKeyboard: 1
+  useYAxis: 1
+  yAxisName: Vertical2
+  walkSpeed: 10
+  runSpeed: 100
+  accel: 0.01
+  homePoint: {fileID: 0}
+  useMouse: 1
+  showCursor: 0
+  useButton: 1
+  axes: 0
+  sensitivityX: 2
+  sensitivityY: 2
+  mousePos: {x: 0, y: 0, z: 0}
+  clicked: 0
+  isDrawing: 0
+  useRaycaster: 0
+  followMouse: 1
+  debugRaycaster: 0
+  isLooking: 0
+  isLookingAt: 
+  isLookingCol: {fileID: 0}
+  lastHitPos: {x: 1, y: 1, z: 1}
+  useCollisions: 0
 --- !u!1 &919721556
 GameObject:
   m_ObjectHideFlags: 0
@@ -223,6 +260,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5c1aa2880c03a514999f5bd677e94d35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  prefab: {fileID: 2956262006889378269, guid: 28bef5f1ca3504b1db75a085e7caef8f, type: 3}
   readFileName: sketch.tilt
   numStrokes: 0
   strokes: []
