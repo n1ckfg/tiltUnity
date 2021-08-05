@@ -10,10 +10,11 @@ using SimpleJSON;
 public class TiltLoader : MonoBehaviour {
 
     public string readFileName;
-    public byte[] bytes;
-    public JSONNode json;
     public int numStrokes;
     public List<TiltStroke> strokes;
+	public JSONNode json;
+
+	[HideInInspector] public byte[] bytes;
 
     private ZipFile zipFile;
 
@@ -33,6 +34,8 @@ public class TiltLoader : MonoBehaviour {
         yield return www;
 
         getEntriesFromZip(www.bytes);
+
+        parseTilt();
     }
 
     private void getEntriesFromZip(byte[] bytes) {
@@ -45,7 +48,6 @@ public class TiltLoader : MonoBehaviour {
 			switch(entry.Name.ToLower()) {
                 case "metadata.json":
                     json = JSON.Parse(readEntryAsString(entry));
-                    Debug.Log(json);
                     break;
                 case "data.sketch":
                     bytes = readEntryAsBytes(entry);
@@ -55,8 +57,68 @@ public class TiltLoader : MonoBehaviour {
     }
 
 	private void parseTilt() {
+        strokes = new List<TiltStroke>();
 
-	}
+        numStrokes = getInt(bytes, 33);
+
+        /*
+		int offset = 20;
+
+        for (int i = 0; i < numStrokes; i++) {
+            int brushIndex = getInt(bytes, offset);
+
+            float r = getFloat(bytes, offset + 4) * 255;
+            float g = getFloat(bytes, offset + 8) * 255;
+            float b = getFloat(bytes, offset + 12) * 255;
+            float a = getFloat(bytes, offset + 16) * 255;
+            Color brushColor = new Color(r, g, b, a);
+
+            float brushSize = getFloat(bytes, offset + 20);
+            UInt32 strokeMask = getUInt(bytes, offset + 24);
+            UInt32 controlPointMask = getUInt(bytes, offset + 28);
+
+            int offsetStrokeMask = 0;
+            int offsetControlPointMask = 0;
+
+            for (int j = 0; j < 4; j++) {
+                byte bb = (byte)(1 << j);
+                if ((strokeMask & bb) > 0) offsetStrokeMask += 4;
+                if ((controlPointMask & bb) > 0) offsetControlPointMask += 4;
+            }
+
+            //parent.println("1. " + brushIndex + ", [" + brushColorArray[0] + ", " + brushColorArray[1] + ", " + brushColorArray[2] + ", " + brushColorArray[3] + "]," + brushSize);
+            //parent.println("2. " + offsetStrokeMask + "," + offsetControlPointMask + "," + strokeMask + "," + controlPointMask);
+
+            offset += 28 + offsetStrokeMask + 4;
+
+            int numControlPoints = getInt(bytes, offset);
+
+			//parent.println("3. " + numControlPoints);
+
+			List<Vector3> positions = new List<Vector3>();
+
+            offset += 4;
+
+            for (int j = 0; j < numControlPoints; j++) {
+                float x = getFloat(bytes, offset + 0);
+                float y = getFloat(bytes, offset + 4);
+                float z = getFloat(bytes, offset + 8);
+                positions.Add(new Vector3(x, y, z));
+
+                //float qw = getFloat(bytes, offset + 12);
+                //float qx = getFloat(bytes, offset + 16);
+                //float qy = getFloat(bytes, offset + 20);
+                //float qz = getFloat(bytes, offset + 24);
+
+                offset += 28 + offsetControlPointMask;
+            }
+
+            //parent.println("4. " + positions.get(0).x + ", " + positions.get(0).y + ", " + positions.get(0).z);
+
+            strokes.Add(new TiltStroke(positions, brushSize, brushColor));
+        }
+		*/
+    }
 
 	private byte[] readEntryAsBytes(ZipEntry entry) {
         Stream zippedStream = zipFile.GetInputStream(entry);
@@ -93,7 +155,10 @@ public class TiltLoader : MonoBehaviour {
     }
 
     private int asInt(byte[] _bytes) {
-        return BitConverter.ToInt32(_bytes, 0);
+        return (_bytes[0] & 0xFF)
+               | ((_bytes[1] & 0xFF) << 8)
+               | ((_bytes[2] & 0xFF) << 16)
+               | ((_bytes[3] & 0xFF) << 24);
     }
 
     private float asFloat(byte[] _bytes) {

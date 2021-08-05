@@ -8,12 +8,10 @@ public class TiltStroke : MonoBehaviour {
     public float brushSize;
     public Color brushColor;
 
-    private void Start() {
-        
-    }
-
-    private void Update() {
-        
+    public TiltStroke(List<Vector3> _positions, float _brushSize, Color _brushColor) {
+        positions = _positions;
+        brushSize = _brushSize;
+        brushColor = _brushColor;
     }
 
 }
