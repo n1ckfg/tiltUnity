@@ -1,8 +1,9 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System;
 using UnityEngine;
+using UnityEngine.Networking;
 using ICSharpCode.SharpZipLibUnityPort.Zip;
 using SimpleJSON;
 
@@ -30,10 +31,10 @@ public class TiltLoader : MonoBehaviour {
         // A tilt zipfile should contain three items: thumbnail.png, data.sketch, metadata.json
         string url = formPath(readFileName);
 
-        WWW www = new WWW(url);
-        yield return www;
+        UnityWebRequest www = UnityWebRequest.Get(url);
+        yield return www.SendWebRequest();
 
-        getEntriesFromZip(www.bytes);
+        getEntriesFromZip(www.downloadHandler.data);
 
         parseTilt();
     }
