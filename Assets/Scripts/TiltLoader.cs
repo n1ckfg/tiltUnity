@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
+using ICSharpCode.SharpZipLibUnityPort.Core;
 using ICSharpCode.SharpZipLibUnityPort.Zip;
 using SimpleJSON;
 
